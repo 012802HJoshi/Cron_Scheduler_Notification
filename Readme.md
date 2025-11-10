@@ -1,3 +1,1 @@
 ## CRON SCHEDULER NOTIFICATION
-
-### Jenkins Testing
