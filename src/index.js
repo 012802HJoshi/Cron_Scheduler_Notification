@@ -245,7 +245,8 @@ async function sendSlackMessage(channel, text) {
   }
 }
 
-async function Scheduler(cronString, project, message, url, timezone) {
+async function Scheduler(cronString, project, projectid, message, timezone) {
+  const url = `https://fcm.googleapis.com/v1/projects/${projectid}/messages:send`;
   node_cron.schedule(
     cronString,
     async () => {
@@ -295,7 +296,7 @@ app.post("/notification-Scheduler", async (req, res) => {
   const { message, projectid, scheduler, timezone, project, week } = req.body;
 
   const cronString = `0 ${scheduler?.minute ?? '*'} ${scheduler?.hour ?? '*'} ${scheduler?.day ?? '*'} ${scheduler?.month ?? '*'} ${scheduler?.week ?? '*'}`;
-  const url = `https://fcm.googleapis.com/v1/projects/${projectid}/messages:send`;
+  
 
   if (!projects[project]) {
     return res.status(400).json({ error: "Invalid project name." });
@@ -323,7 +324,7 @@ app.post("/notification-Scheduler", async (req, res) => {
   }
 
   // 🔥 Start scheduler immediately
-  await Scheduler(cronString, project, message, url, timezone);
+  await Scheduler(cronString, project, projectid, message, url, timezone);
 
   await sendSlackMessage(
     "C092NBGSRLY",
@@ -343,6 +344,33 @@ app.listen(port, async() => {
   console.log(`⚡️ \x1b[43m [server]: Server is Fired Up at http://localhost:${port} \x1b[0m`);
 }); 
 
-(async function init(){
-  console.log("🚀 Rebuilding or restarting — registering cron jobs...");
+(async function init() {
+
+  console.log("🚀 Restoring saved cron jobs...");
+
+  const all = await Notification.find();
+
+  all.forEach((n) => {
+    let parsedMessage = n.message;
+
+    // If stored as string, parse it
+    if (typeof parsedMessage === "string") {
+      try {
+        parsedMessage = JSON.parse(parsedMessage);
+      } catch (e) {
+        console.error("❌ Failed to parse message JSON from DB");
+      }
+    }
+
+    Scheduler(
+      n.cronString,
+      n.project,
+      n.projectid,
+      parsedMessage,
+      n.timezone
+    );
+  });
+
+  console.log(`📌 Restored ${all.length} cron jobs`);
+
 })();
