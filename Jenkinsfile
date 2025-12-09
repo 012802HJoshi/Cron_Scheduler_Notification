@@ -24,6 +24,21 @@ pipeline {
             }
         }
 
+         stage('Create Network If Not Exists') {
+            steps {
+                sh '''
+                    echo "✅ Required network: db-network-mongo"
+
+                    if ! docker network ls | grep -q db-network-mongo; then
+                        echo "✅ Creating Docker network: db-network-mongo"
+                        docker network create db-network-mongo
+                    else
+                        echo "✅ Docker network already exists"
+                    fi
+                '''
+            }
+        }
+
         stage('Build Docker Image') {
             steps {
                 sh 'docker build -t notification-cron:${BUILD_NUMBER} -t notification-cron:latest .'
@@ -34,7 +49,7 @@ pipeline {
             steps {
                sh 'docker stop notification-cron || true'
                sh 'docker rm notification-cron || true'
-               sh 'docker run -d --name notification-cron -p 2025:2025 notification-cron:latest'
+               sh 'docker run -d --name notification-cron --network db-network-mongo -p 2025:2025 notification-cron:latest'
             }
         }
     }
