@@ -5,18 +5,28 @@ const admin = require('firebase-admin');
 const node_cron = require("node-cron");
 const dotenv = require("dotenv");
 const cors = require('cors');
-
+const mongoose = require('mongoose');
 const { WebClient, LogLevel } = require("@slack/web-api");
+
+const Notification =require("./Database/notification.model");
+const getAllNotification = require("./Controller/notification.controller");
 
 const port = 2025;
 const app = express();
 dotenv.config(); 
 app.use(bodyParser.json());
 
+
 app.use(cors({
   origin: ['https://dashboardnotification.web.app',"http://localhost:5173"],
   methods: ['GET', 'POST', 'OPTIONS'],
 }));
+
+app.get("/all-notification",getAllNotification);
+
+const token = process.env.BOT_TOKEN;
+const mongourl = process.env.MONGOURL;
+
 
 const filemanager = {
   type: "service_account",
@@ -73,7 +83,6 @@ const LightVideoPlayer = {
   client_x509_cert_url: process.env.LIGHT_VIDEO_PLAYER_CLIENT_CERT_URL,
   universe_domain: process.env.UNIVERSE_DOMAIN,
 };
-
 
 const MusicPlayer = {
   type: "service_account",
@@ -186,6 +195,28 @@ const gallery ={
   client_x509_cert_url: process.env.HDX_CLIENT_CERT_URL,
   universe_domain: process.env.UNIVERSE_DOMAIN,
 }
+
+const projects = {
+    filemanager,
+    videoplayer,
+    ZxFileManager,
+    LightVideoPlayer,
+    MusicPlayer,
+    vpn,
+    collagemaker,
+    hdx,
+    cast,
+    mp3,
+    hd_downloader,
+    gallery
+  };
+
+  
+  async function db_connection(mongourl){
+        mongoose.connect(mongourl)
+        .then(()=> console.log('MongoDB connected...'))
+        .catch(err=> console.log(err))
+  }
  
   async function getAccessToken(project) {
     try {
@@ -197,7 +228,7 @@ const gallery ={
     }
   }
   
-const token = process.env.BOT_TOKEN;
+
 
 const slackClient = new WebClient(token, {
     logLevel: LogLevel.DEBUG
@@ -214,98 +245,104 @@ async function sendSlackMessage(channel, text) {
   }
 }
 
+async function Scheduler(cronString, project, message, url, timezone) {
+  node_cron.schedule(
+    cronString,
+    async () => {
+      try {
+        const accessToken = await getAccessToken(projects[project]);
+
+        const response = await axios.post(
+          url,
+          { message },
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        if (response.status === 200) {
+          console.log("✅ Notification sent");
+          await sendSlackMessage(
+            "C092NBGSRLY",
+            `[Server]: ✅ Notification sent successfully for *${project}* at ${new Date().toLocaleString("en-IN", { timeZone: timezone })}`
+          );
+        }
+      } catch (error) {
+        console.error("❌ Scheduler execution error:", error);
+
+        await sendSlackMessage(
+          "C092NBGSRLY",
+          `[Server]: ❌ Error sending scheduled notification for *${project}*: ${error.message}`
+        );
+      }
+    },
+    {
+      scheduled: true,
+      timezone: timezone,
+    }
+  );
+}
+
+
 app.get('/', (req, res) => {
     res.status(200).send('TimeZone Notification Server developed and CI/CDed by Harshit Joshi !!!');
 });
 
-app.post("/notification-Scheduler", async(req, res) => {
-  const {message, projectid,scheduler,timezone,project} = req.body;
+app.post("/notification-Scheduler", async (req, res) => {
+  const { message, projectid, scheduler, timezone, project, week } = req.body;
 
-  console.log(message);
-
-  const cron_string = `0 ${scheduler?.minute ?? '*'} ${scheduler?.hour ?? '*'} ${scheduler?.day ?? '*'} ${scheduler?.month ?? '*'} ${scheduler?.week ?? '*'}`;
-  
+  const cronString = `0 ${scheduler?.minute ?? '*'} ${scheduler?.hour ?? '*'} ${scheduler?.day ?? '*'} ${scheduler?.month ?? '*'} ${scheduler?.week ?? '*'}`;
   const url = `https://fcm.googleapis.com/v1/projects/${projectid}/messages:send`;
-  
-  const projects = {
-    filemanager,
-    videoplayer,
-    ZxFileManager,
-    LightVideoPlayer,
-    MusicPlayer,
-    vpn,
-    collagemaker,
-    hdx,
-    cast,
-    mp3,
-    hd_downloader,
-    gallery
-  };
-  
+
   if (!projects[project]) {
-    return res.status(400).json({ error: "Invalid project name provided." });
+    return res.status(400).json({ error: "Invalid project name." });
   }
-  
-  try{
-    console.log(`✅ \x1b[33m [server]:SCHEDULER : ${cron_string} \x1b[0m`);
-    
-    const accessToken = await getAccessToken(projects[project]);
-    
-  }catch(error){
-    console.error('🚫 \x1b[32m Error getting token: \x1b[0m', error );
-    return res.status(400).json({ 'Error getting token:': error});
+
+  try {
+    await getAccessToken(projects[project]);
+  } catch (error) {
+    return res.status(400).json({ error: "FCM Token fetch failed.", details: error });
   }
-  
-   await sendSlackMessage("C092NBGSRLY", `[Server]: ⏰📅 Notification Scheduled successfully for *${project}* at ${new Date().toLocaleString("en-IN", { timeZone: timezone })}`);
-  
-  node_cron.schedule(cron_string ,async()=>{
+
+  // Store in DB if week = true
+  if (week === true || week === "true") {
     try {
-      const accessToken = await getAccessToken(projects[project]);
-      
-      const response = await axios.post(
-        url,
-        {message},
-        {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      if (response.status === 200) {
-      console.log("✅ Notification sent", response);
-      return await sendSlackMessage("C092NBGSRLY", `[Server]: ✅ Notification sent successfully for *${project}* at ${new Date().toLocaleString("en-IN", { timeZone: timezone })}`);
-      }
-
-    
-
-    }catch(error) {
-      console.error("Error sending notification:", error);
-      const errorResponse = {
-        message: error.message,
-        status: error.response ? error.response.status : 500,
-        data: error.response ? error.response.data : null
-      };
-      await sendSlackMessage("C092NBGSRLY", `[Server]: ❌ Error sending notification for *${project}*: ${error.message}`);
-      return res.status(400).json(errorResponse);
-    }
-  },{
-    scheduled: true,
-    timezone: `${timezone}`
-  })
-  
-    res.status(200).json({
-      message: "Notification Scheduler is running",
-      status: 200,
-      data: {
-        cron_string,
+      await new Notification({
+        projectid,
         project,
-        timezone
-      }
-    });
-})
+        timezone,
+        cronString,
+        message: JSON.stringify(message),
+      }).save();
+    } catch (error) {
+      return res.status(500).json({ error: "DB Save Failed", details: error });
+    }
+  }
 
-app.listen(port, () => {
+  // 🔥 Start scheduler immediately
+  await Scheduler(cronString, project, message, url, timezone);
+
+  await sendSlackMessage(
+    "C092NBGSRLY",
+    `[Server]: ⏰📅 Scheduled *${project}*`
+  );
+
+  res.status(200).json({
+    status: 200,
+    message: "Scheduler started",
+    data: { cronString, project, timezone },
+  });
+});
+
+
+app.listen(port, async() => {
+  db_connection(mongourl);
   console.log(`⚡️ \x1b[43m [server]: Server is Fired Up at http://localhost:${port} \x1b[0m`);
 }); 
+
+(async function init(){
+  console.log("🚀 Rebuilding or restarting — registering cron jobs...");
+})();
