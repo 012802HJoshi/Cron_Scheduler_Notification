@@ -130,6 +130,62 @@ const hdx ={
   client_x509_cert_url: process.env.HDX_CLIENT_CERT_URL,
   universe_domain: process.env.UNIVERSE_DOMAIN,
 }
+
+const cast ={
+  type: "service_account",
+  project_id: process.env.CAST_PROJECT_ID,
+  private_key_id: process.env.CAST_PRIVATE_KEY_ID,
+  private_key: process.env.CAST_PRIVATE_KEY, // Fix new line issue
+  client_email: process.env.CAST_CLIENT_EMAIL,
+  client_id: process.env.CAST_CLIENT_ID,
+  auth_uri: process.env.AUTH_URI,
+  token_uri: process.env.TOKEN_URI,
+  auth_provider_x509_cert_url: process.env.AUTH_PROVIDER_CERT_URL,
+  client_x509_cert_url: process.env.HDX_CLIENT_CERT_URL,
+  universe_domain: process.env.UNIVERSE_DOMAIN,
+}
+
+const mp3 ={
+  type: "service_account",
+  project_id: process.env.MP3_PROJECT_ID,
+  private_key_id: process.env.MP3_PRIVATE_KEY_ID,
+  private_key: process.env.MP3_PRIVATE_KEY, // Fix new line issue
+  client_email: process.env.MP3_CLIENT_EMAIL,
+  client_id: process.env.MP3_CLIENT_ID,
+  auth_uri: process.env.AUTH_URI,
+  token_uri: process.env.TOKEN_URI,
+  auth_provider_x509_cert_url: process.env.AUTH_PROVIDER_CERT_URL,
+  client_x509_cert_url: process.env.HDX_CLIENT_CERT_URL,
+  universe_domain: process.env.UNIVERSE_DOMAIN,
+}
+
+const hd_downloader ={
+  type: "service_account",
+  project_id: process.env.HD_DOWNLOADER_PROJECT_ID,
+  private_key_id: process.env.HD_DOWNLOADER_PRIVATE_KEY_ID,
+  private_key: process.env.HD_DOWNLOADER_PRIVATE_KEY, // Fix new line issue
+  client_email: process.env.HD_DOWNLOADER_CLIENT_EMAIL,
+  client_id: process.env.HD_DOWNLOADER_CLIENT_ID,
+  auth_uri: process.env.AUTH_URI,
+  token_uri: process.env.TOKEN_URI,
+  auth_provider_x509_cert_url: process.env.AUTH_PROVIDER_CERT_URL,
+  client_x509_cert_url: process.env.HDX_CLIENT_CERT_URL,
+  universe_domain: process.env.UNIVERSE_DOMAIN,
+}
+
+const gallery ={
+  type: "service_account",
+  project_id: process.env.GALLERY_PROJECT_ID,
+  private_key_id: process.env.GALLERY_PRIVATE_KEY_ID,
+  private_key: process.env.GALLERY_PRIVATE_KEY, // Fix new line issue
+  client_email: process.env.GALLERY_CLIENT_EMAIL,
+  client_id: process.env.GALLERY_CLIENT_ID,
+  auth_uri: process.env.AUTH_URI,
+  token_uri: process.env.TOKEN_URI,
+  auth_provider_x509_cert_url: process.env.AUTH_PROVIDER_CERT_URL,
+  client_x509_cert_url: process.env.HDX_CLIENT_CERT_URL,
+  universe_domain: process.env.UNIVERSE_DOMAIN,
+}
  
   async function getAccessToken(project) {
     try {
@@ -179,7 +235,11 @@ app.post("/notification-Scheduler", async(req, res) => {
     MusicPlayer,
     vpn,
     collagemaker,
-    hdx
+    hdx,
+    cast,
+    mp3,
+    hd_downloader,
+    gallery
   };
   
   if (!projects[project]) {
