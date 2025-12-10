@@ -324,7 +324,7 @@ app.post("/notification-Scheduler", async (req, res) => {
   }
 
   // 🔥 Start scheduler immediately
-  await Scheduler(cronString, project, projectid, message, url, timezone);
+  await Scheduler(cronString, project, projectid, message, timezone);
 
   await sendSlackMessage(
     "C092NBGSRLY",
@@ -353,7 +353,6 @@ app.listen(port, async() => {
   all.forEach((n) => {
     let parsedMessage = n.message;
 
-    // If stored as string, parse it
     if (typeof parsedMessage === "string") {
       try {
         parsedMessage = JSON.parse(parsedMessage);
