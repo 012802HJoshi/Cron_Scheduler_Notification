@@ -9,7 +9,8 @@ const mongoose = require('mongoose');
 const { WebClient, LogLevel } = require("@slack/web-api");
 
 const Notification =require("./Database/notification.model");
-const getAllNotification = require("./Controller/notification.controller");
+const { getAllNotification, deleteNotification } = require("./Controller/notification.controller");
+
 
 const port = 2025;
 const app = express();
@@ -23,6 +24,7 @@ app.use(cors({
 }));
 
 app.get("/all-notification",getAllNotification);
+app.delete("/delete-notification",deleteNotification);
 
 const token = process.env.BOT_TOKEN;
 const mongourl = process.env.MONGOURL;
