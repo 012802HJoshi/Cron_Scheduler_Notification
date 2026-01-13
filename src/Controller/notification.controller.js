@@ -5,7 +5,6 @@ const getAllNotification = async(req,res)=>{
    res.status(200).json({allNotifications});
 }
 
-
 const deleteNotification = async (req, res) => {
   try {
     const { notification_id } = req.body;
@@ -21,7 +20,6 @@ const deleteNotification = async (req, res) => {
     return res.status(500).json({ error: "Delete failed", details: error.message });
   }
 };
-
 
 module.exports = {
   getAllNotification,

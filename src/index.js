@@ -10,7 +10,7 @@ const { WebClient, LogLevel } = require("@slack/web-api");
 
 const Notification =require("./Database/notification.model");
 const { getAllNotification, deleteNotification } = require("./Controller/notification.controller");
-
+const {emailPusher} = require("./Controller/email.controller");
 
 const port = 2025;
 const app = express();
@@ -24,6 +24,7 @@ app.use(cors({
 }));
 
 app.get("/all-notification",getAllNotification);
+app.get("/email",emailPusher);
 app.delete("/delete-notification",deleteNotification);
 
 const token = process.env.BOT_TOKEN;
@@ -230,8 +231,6 @@ const projects = {
     }
   }
   
-
-
 const slackClient = new WebClient(token, {
     logLevel: LogLevel.DEBUG
 });

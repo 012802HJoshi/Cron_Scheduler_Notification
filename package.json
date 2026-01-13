@@ -20,7 +20,8 @@
     "express": "^4.21.2",
     "firebase-admin": "^13.2.0",
     "mongoose": "^9.0.1",
-    "node-cron": "^3.0.3"
+    "node-cron": "^3.0.3",
+    "nodemailer": "^7.0.12"
   },
   "devDependencies": {
     "@types/body-parser": "^1.19.5",
