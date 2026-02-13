@@ -269,7 +269,7 @@ async function Scheduler(cronString, project, projectid, message, timezone) {
           console.log("✅ Notification sent");
           await sendSlackMessage(
             "C092NBGSRLY",
-            `[🎄 Server]: ✅ Notification sent successfully for *${project}* at ${new Date().toLocaleString("en-IN", { timeZone: timezone })} ❄️`
+            `[Server]: ✅ Notification sent successfully for *${project}* at ${new Date().toLocaleString("en-IN", { timeZone: timezone })}`
           );
         }
       } catch (error) {
@@ -277,7 +277,7 @@ async function Scheduler(cronString, project, projectid, message, timezone) {
 
         await sendSlackMessage(
           "C092NBGSRLY",
-          `[🎄 Server]: ❌ Error sending scheduled notification for *${project}*: ${error.message} ❄️`
+          `[Server]: ❌ Error sending scheduled notification for *${project}*: ${error.message}`
         );
       }
     },
@@ -329,7 +329,7 @@ app.post("/notification-Scheduler", async (req, res) => {
 
   await sendSlackMessage(
   "C092NBGSRLY",
-  `[🎄 Server]: *Ho Ho Ho!* Scheduled *${project}* — Merry Christmas! 🎁🔔`
+  `[Server]:  Scheduled *${project}* `
 );
 
   res.status(200).json({
