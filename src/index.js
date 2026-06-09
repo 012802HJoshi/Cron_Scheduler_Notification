@@ -31,6 +31,34 @@ const token = process.env.BOT_TOKEN;
 const mongourl = process.env.MONGOURL;
 
 
+const gallaree = {
+  type: "service_account",
+  project_id: process.env.GALLAREE_PROJECT_ID,
+  private_key_id: process.env.GALLAREE_PRIVATE_KEY_ID,
+  private_key: process.env.GALLAREE_PRIVATE_KEY, // Fix new line issue
+  client_email: process.env.GALLAREE_CLIENT_EMAIL,
+  client_id: process.env.GALLAREE_CLIENT_ID,
+  auth_uri: process.env.AUTH_URI,
+  token_uri: process.env.TOKEN_URI,
+  auth_provider_x509_cert_url: process.env.AUTH_PROVIDER_CERT_URL,
+  client_x509_cert_url: process.env.GALLAREE_CLIENT_CERT_URL,
+  universe_domain: process.env.UNIVERSE_DOMAIN,
+};
+
+const gps = {
+  type: "service_account",
+  project_id: process.env.GPS_PROJECT_ID,
+  private_key_id: process.env.GPS_PRIVATE_KEY_ID,
+  private_key: process.env.GPS_PRIVATE_KEY, // Fix new line issue
+  client_email: process.env.GPS_CLIENT_EMAIL,
+  client_id: process.env.GPS_CLIENT_ID,
+  auth_uri: process.env.AUTH_URI,
+  token_uri: process.env.TOKEN_URI,
+  auth_provider_x509_cert_url: process.env.AUTH_PROVIDER_CERT_URL,
+  client_x509_cert_url: process.env.GPS_CLIENT_CERT_URL,
+  universe_domain: process.env.UNIVERSE_DOMAIN,
+};
+
 const filemanager = {
   type: "service_account",
   project_id: process.env.FILE_MANAGER_PROJECT_ID,
@@ -211,7 +239,9 @@ const projects = {
     cast,
     mp3,
     hd_downloader,
-    gallery
+    gallery,
+    gallaree,
+    gps
   };
 
   

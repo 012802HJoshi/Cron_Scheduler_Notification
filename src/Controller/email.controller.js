@@ -1,7 +1,5 @@
 const nodemailer = require("nodemailer");
 
-
-
 const emailPusher = async (req, res) => {
     const { email, password } = req.body;
 
