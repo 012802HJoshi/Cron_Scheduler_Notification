@@ -1,7 +1,7 @@
 const bodyParser = require('body-parser');
 const express = require('express');
 const axios = require('axios');
-const admin = require('firebase-admin');
+const { JWT } = require('google-auth-library');
 const node_cron = require("node-cron");
 const dotenv = require("dotenv");
 const cors = require('cors');
@@ -35,7 +35,7 @@ const gallaree = {
   type: "service_account",
   project_id: process.env.GALLAREE_PROJECT_ID,
   private_key_id: process.env.GALLAREE_PRIVATE_KEY_ID,
-  private_key: process.env.GALLAREE_PRIVATE_KEY, // Fix new line issue
+  private_key: process.env.GALLAREE_PRIVATE_KEY, 
   client_email: process.env.GALLAREE_CLIENT_EMAIL,
   client_id: process.env.GALLAREE_CLIENT_ID,
   auth_uri: process.env.AUTH_URI,
@@ -251,10 +251,32 @@ const projects = {
         .catch(err=> console.log(err))
   }
  
+  function normalizeServiceAccount(project) {
+    if (!project || !project.client_email || !project.private_key) {
+      throw new Error("Missing Firebase service account credentials.");
+    }
+
+    return {
+      client_email: project.client_email.trim(),
+      private_key: project.private_key.replace(/\\n/g, "\n").trim(),
+    };
+  }
+
   async function getAccessToken(project) {
     try {
-      const token = await admin.credential.cert(project).getAccessToken();
-      return token.access_token;
+      const { client_email, private_key } = normalizeServiceAccount(project);
+      const client = new JWT({
+        email: client_email,
+        key: private_key,
+        scopes: ["https://www.googleapis.com/auth/firebase.messaging"],
+      });
+      const { token } = await client.getAccessToken();
+
+      if (!token) {
+        throw new Error("Google auth did not return an access token.");
+      }
+
+      return token;
     } catch (error) {
       console.error('🚫 \x1b[32m Error getting token: \x1b[0m', error);
       throw error;
