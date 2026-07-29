@@ -8,24 +8,24 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 const { WebClient, LogLevel } = require("@slack/web-api");
 
-const Notification =require("./Database/notification.model");
+const Notification = require("./Database/notification.model");
 const { getAllNotification, deleteNotification } = require("./Controller/notification.controller");
-const {emailPusher} = require("./Controller/email.controller");
+const { emailPusher } = require("./Controller/email.controller");
 
 const port = 2025;
 const app = express();
-dotenv.config(); 
+dotenv.config();
 app.use(bodyParser.json());
 
 
 app.use(cors({
-  origin: ['https://dashboardnotification.web.app',"http://localhost:5173"],
+  origin: ['https://dashboardnotification.web.app', "http://localhost:5173"],
   methods: ['GET', 'POST', 'OPTIONS'],
 }));
 
-app.get("/all-notification",getAllNotification);
-app.get("/email",emailPusher);
-app.delete("/delete-notification",deleteNotification);
+app.get("/all-notification", getAllNotification);
+app.post("/email", emailPusher);
+app.delete("/delete-notification", deleteNotification);
 
 const token = process.env.BOT_TOKEN;
 const mongourl = process.env.MONGOURL;
@@ -35,7 +35,7 @@ const gallaree = {
   type: "service_account",
   project_id: process.env.GALLAREE_PROJECT_ID,
   private_key_id: process.env.GALLAREE_PRIVATE_KEY_ID,
-  private_key: process.env.GALLAREE_PRIVATE_KEY, 
+  private_key: process.env.GALLAREE_PRIVATE_KEY,
   client_email: process.env.GALLAREE_CLIENT_EMAIL,
   client_id: process.env.GALLAREE_CLIENT_ID,
   auth_uri: process.env.AUTH_URI,
@@ -143,7 +143,7 @@ const vpn = {
   universe_domain: process.env.UNIVERSE_DOMAIN,
 };
 
-const collagemaker ={
+const collagemaker = {
   type: "service_account",
   project_id: process.env.PHOTO_EDITOR_PROJECT_ID,
   private_key_id: process.env.PHOTO_EDITOR_PRIVATE_KEY_ID,
@@ -157,7 +157,7 @@ const collagemaker ={
   universe_domain: process.env.UNIVERSE_DOMAIN,
 }
 
-const hdx ={
+const hdx = {
   type: "service_account",
   project_id: process.env.HDX_PROJECT_ID,
   private_key_id: process.env.HDX_PRIVATE_KEY_ID,
@@ -171,7 +171,7 @@ const hdx ={
   universe_domain: process.env.UNIVERSE_DOMAIN,
 }
 
-const cast ={
+const cast = {
   type: "service_account",
   project_id: process.env.CAST_PROJECT_ID,
   private_key_id: process.env.CAST_PRIVATE_KEY_ID,
@@ -185,7 +185,7 @@ const cast ={
   universe_domain: process.env.UNIVERSE_DOMAIN,
 }
 
-const mp3 ={
+const mp3 = {
   type: "service_account",
   project_id: process.env.MP3_PROJECT_ID,
   private_key_id: process.env.MP3_PRIVATE_KEY_ID,
@@ -199,7 +199,7 @@ const mp3 ={
   universe_domain: process.env.UNIVERSE_DOMAIN,
 }
 
-const hd_downloader ={
+const hd_downloader = {
   type: "service_account",
   project_id: process.env.HD_DOWNLOADER_PROJECT_ID,
   private_key_id: process.env.HD_DOWNLOADER_PRIVATE_KEY_ID,
@@ -213,7 +213,7 @@ const hd_downloader ={
   universe_domain: process.env.UNIVERSE_DOMAIN,
 }
 
-const gallery ={
+const gallery = {
   type: "service_account",
   project_id: process.env.GALLERY_PROJECT_ID,
   private_key_id: process.env.GALLERY_PRIVATE_KEY_ID,
@@ -228,63 +228,63 @@ const gallery ={
 }
 
 const projects = {
-    filemanager,
-    videoplayer,
-    ZxFileManager,
-    LightVideoPlayer,
-    MusicPlayer,
-    vpn,
-    collagemaker,
-    hdx,
-    cast,
-    mp3,
-    hd_downloader,
-    gallery,
-    gallaree,
-    gps
+  filemanager,
+  videoplayer,
+  ZxFileManager,
+  LightVideoPlayer,
+  MusicPlayer,
+  vpn,
+  collagemaker,
+  hdx,
+  cast,
+  mp3,
+  hd_downloader,
+  gallery,
+  gallaree,
+  gps
+};
+
+
+async function db_connection(mongourl) {
+  mongoose.connect(mongourl)
+    .then(() => console.log('MongoDB connected...'))
+    .catch(err => console.log(err))
+}
+
+function normalizeServiceAccount(project) {
+  if (!project || !project.client_email || !project.private_key) {
+    throw new Error("Missing Firebase service account credentials.");
+  }
+
+  return {
+    client_email: project.client_email.trim(),
+    private_key: project.private_key.replace(/\\n/g, "\n").trim(),
   };
+}
 
-  
-  async function db_connection(mongourl){
-        mongoose.connect(mongourl)
-        .then(()=> console.log('MongoDB connected...'))
-        .catch(err=> console.log(err))
-  }
- 
-  function normalizeServiceAccount(project) {
-    if (!project || !project.client_email || !project.private_key) {
-      throw new Error("Missing Firebase service account credentials.");
+async function getAccessToken(project) {
+  try {
+    const { client_email, private_key } = normalizeServiceAccount(project);
+    const client = new JWT({
+      email: client_email,
+      key: private_key,
+      scopes: ["https://www.googleapis.com/auth/firebase.messaging"],
+    });
+    const { token } = await client.getAccessToken();
+
+    if (!token) {
+      throw new Error("Google auth did not return an access token.");
     }
 
-    return {
-      client_email: project.client_email.trim(),
-      private_key: project.private_key.replace(/\\n/g, "\n").trim(),
-    };
+    return token;
+  } catch (error) {
+    console.error('🚫 \x1b[32m Error getting token: \x1b[0m', error);
+    throw error;
   }
+}
 
-  async function getAccessToken(project) {
-    try {
-      const { client_email, private_key } = normalizeServiceAccount(project);
-      const client = new JWT({
-        email: client_email,
-        key: private_key,
-        scopes: ["https://www.googleapis.com/auth/firebase.messaging"],
-      });
-      const { token } = await client.getAccessToken();
-
-      if (!token) {
-        throw new Error("Google auth did not return an access token.");
-      }
-
-      return token;
-    } catch (error) {
-      console.error('🚫 \x1b[32m Error getting token: \x1b[0m', error);
-      throw error;
-    }
-  }
-  
 const slackClient = new WebClient(token, {
-    logLevel: LogLevel.DEBUG
+  logLevel: LogLevel.DEBUG
 });
 
 async function sendSlackMessage(channel, text) {
@@ -342,14 +342,14 @@ async function Scheduler(cronString, project, projectid, message, timezone) {
 
 
 app.get('/', (req, res) => {
-    res.status(200).send('TimeZone Notification Server developed and CI/CDed by Harshit Joshi !!!');
+  res.status(200).send('TimeZone Notification Server developed and CI/CDed by Harshit Joshi !!!');
 });
 
 app.post("/notification-Scheduler", async (req, res) => {
   const { message, projectid, scheduler, timezone, project, week } = req.body;
 
   const cronString = `0 ${scheduler?.minute ?? '*'} ${scheduler?.hour ?? '*'} ${scheduler?.day ?? '*'} ${scheduler?.month ?? '*'} ${scheduler?.week ?? '*'}`;
-  
+
 
   if (!projects[project]) {
     return res.status(400).json({ error: "Invalid project name." });
@@ -380,9 +380,9 @@ app.post("/notification-Scheduler", async (req, res) => {
   await Scheduler(cronString, project, projectid, message, timezone);
 
   await sendSlackMessage(
-  "C092NBGSRLY",
-  `[Server]:  Scheduled *${project}* `
-);
+    "C092NBGSRLY",
+    `[Server]:  Scheduled *${project}* `
+  );
 
   res.status(200).json({
     status: 200,
@@ -392,10 +392,10 @@ app.post("/notification-Scheduler", async (req, res) => {
 });
 
 
-app.listen(port, async() => {
+app.listen(port, async () => {
   db_connection(mongourl);
   console.log(`⚡️ \x1b[43m [server]: Server is Fired Up at http://localhost:${port} \x1b[0m`);
-}); 
+});
 
 (async function init() {
 
