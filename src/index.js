@@ -298,7 +298,30 @@ async function sendSlackMessage(channel, text) {
   }
 }
 
-async function Scheduler(cronString, project, projectid, message, timezone) {
+function isTokenRequest(message, body) {
+  if (body && typeof body.token === "string" && body.token.trim().length > 0) return true;
+  if (!message) return false;
+  if (typeof message === "object" && message !== null) {
+    if (typeof message.token === "string" && message.token.trim().length > 0) return true;
+    if (message.token && typeof message.token !== "string") return true;
+  }
+  if (typeof message === "string") {
+    try {
+      const parsed = JSON.parse(message);
+      if (parsed && typeof parsed === "object") {
+        if (typeof parsed.token === "string" && parsed.token.trim().length > 0) return true;
+        if (parsed.token && typeof parsed.token !== "string") return true;
+      }
+    } catch (e) {
+      // not JSON string
+    }
+  }
+  return false;
+}
+
+async function Scheduler(cronString, project, projectid, message, timezone, isTokenOverride) {
+  const isToken = isTokenOverride !== undefined ? Boolean(isTokenOverride) : isTokenRequest(message);
+  const tag = isToken ? "[test]:" : "[Server]:";
   const url = `https://fcm.googleapis.com/v1/projects/${projectid}/messages:send`;
   node_cron.schedule(
     cronString,
@@ -321,7 +344,7 @@ async function Scheduler(cronString, project, projectid, message, timezone) {
           console.log("✅ Notification sent");
           await sendSlackMessage(
             "C092NBGSRLY",
-            `[Server]: ✅ Notification sent successfully for *${project}* at ${new Date().toLocaleString("en-IN", { timeZone: timezone })}`
+            `${tag} ✅ Notification sent successfully for *${project}* at ${new Date().toLocaleString("en-IN", { timeZone: timezone })}`
           );
         }
       } catch (error) {
@@ -329,7 +352,7 @@ async function Scheduler(cronString, project, projectid, message, timezone) {
 
         await sendSlackMessage(
           "C092NBGSRLY",
-          `[Server]: ❌ Error sending scheduled notification for *${project}*: ${error.message}`
+          `${tag} ❌ Error sending scheduled notification for *${project}*: ${error.message}`
         );
       }
     },
@@ -376,12 +399,15 @@ app.post("/notification-Scheduler", async (req, res) => {
     }
   }
 
+  const isToken = isTokenRequest(message, req.body);
+  const tag = isToken ? "[test]:" : "[Server]:";
+
   // 🔥 Start scheduler immediately
-  await Scheduler(cronString, project, projectid, message, timezone);
+  await Scheduler(cronString, project, projectid, message, timezone, isToken);
 
   await sendSlackMessage(
     "C092NBGSRLY",
-    `[Server]:  Scheduled *${project}* `
+    `${tag}  Scheduled *${project}* `
   );
 
   res.status(200).json({
